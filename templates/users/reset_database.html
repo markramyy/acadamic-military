@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Reset Database{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="mb-0">إعادة ضبط قاعدة البيانات</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <strong>تحذير!</strong> ستؤدي هذه العملية إلى مسح جميع التكليفات وبيانات الطلاب من قاعدة البيانات وإعادة تحميل البيانات التجريبية.
+                        <p class="mb-0 mt-2">قبل المتابعة، ضع في اعتبارك <a href="{% url 'export_database' %}" class="alert-link btn btn-warning btn-sm d-inline-block mt-1 fw-bold"><i class="bi bi-download me-1"></i>تحميل قاعدة البيانات</a></p>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="username" class="form-label">اسم المستخدم المسؤول</label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="password" class="form-label">كلمة مرور المسؤول</label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-danger btn-lg" onclick="return confirm('هل أنت متأكد من إعادة ضبط قاعدة البيانات؟ لا يمكن التراجع عن هذا الإجراء.');">
+                                <i class="bi bi-exclamation-triangle me-2"></i>إعادة ضبط قاعدة البيانات
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

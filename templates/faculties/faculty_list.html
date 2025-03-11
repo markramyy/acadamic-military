@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+
+{% block title %}الكليات{% endblock %}
+{% block page_title %}الكليات ({{ total_count }}){% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Military theme colors */
+    :root {
+        --military-green: #4b5320;
+        --military-green-light: #606b28;
+        --military-sand: #d8c596;
+        --military-brown: #8a7444;
+        --military-gray: #5d5d5d;
+    }
+
+    .table-military {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .table-military thead {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .table-military tbody tr:hover {
+        background-color: rgba(216, 197, 150, 0.2);
+    }
+
+    .btn-military {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .btn-military:hover {
+        background-color: var(--military-green-light);
+        color: white;
+    }
+
+    .btn-military-danger {
+        background-color: #8b0000;
+        color: white;
+    }
+
+    .btn-military-danger:hover {
+        background-color: #a52a2a;
+        color: white;
+    }
+
+    .modal-military .modal-header {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .search-container {
+        position: relative;
+    }
+
+    .search-container .bi-search {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        color: var(--military-gray);
+    }
+
+    .search-input {
+        padding-left: 35px;
+    }
+
+    .card-military {
+        border: 1px solid #dee2e6;
+        border-top: 4px solid var(--military-green);
+    }
+
+    .badge-code {
+        background-color: var(--military-brown);
+        color: white;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+
+    /* Animation for fade in/out */
+    .fade-enter-active, .fade-leave-active {
+        transition: opacity 0.5s;
+    }
+    .fade-enter, .fade-leave-to {
+        opacity: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card card-military shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="search-container">
+                    <form method="get" class="d-flex">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control search-input" placeholder="البحث عن كلية..." value="{{ search_query }}" aria-label="Search">
+                            <button class="btn btn-outline-secondary" type="submit">
+                                بحث
+                            </button>
+                            {% if search_query %}
+                            <a href="{% url 'faculty_list' %}" class="btn btn-outline-secondary">
+                                الغاء البحث
+                            </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+                <button type="button" class="btn btn-military" data-bs-toggle="modal" data-bs-target="#createFacultyModal">
+                    <i class="bi bi-plus-circle me-1"></i> إضافة كلية جديدة
+                </button>
+            </div>
+
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-military">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">اسم الكلية</th>
+                                <th scope="col">رمز الكلية</th>
+                                <th scope="col" class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for faculty in page_obj %}
+                                <tr id="faculty-row-{{ faculty.id }}">
+                                    <td>{{ forloop.counter0|add:page_obj.start_index }}</td>
+                                    <td>{{ faculty.name }}</td>
+                                    <td><span class="badge badge-code">{{ faculty.code }}</span></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-military-danger btn-sm delete-faculty"
+                                                data-id="{{ faculty.id }}" data-name="{{ faculty.name }}"
+                                                data-bs-toggle="modal" data-bs-target="#deleteFacultyModal">
+                                            <i class="bi bi-trash me-1"></i> حذف
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                {% if page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for i in page_obj.paginator.page_range %}
+                                {% if page_obj.number == i %}
+                                    <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                                {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?page={{ i }}{% if search_query %}&search={{ search_query }}{% endif %}">{{ i }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if search_query %}&search={{ search_query }}{% endif %}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info text-center">
+                    {% if search_query %}
+                        لا توجد كليات مطابقة لعملية البحث "{{ search_query }}"
+                    {% else %}
+                        لا توجد كليات مضافة بعد. أضف كلية جديدة باستخدام زر "إضافة كلية جديدة".
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Faculty Modal -->
+<div class="modal fade modal-military" id="createFacultyModal" tabindex="-1" aria-labelledby="createFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createFacultyModalLabel">إضافة كلية جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'faculty_create' %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.name.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.code.id_for_label }}" class="form-label">{{ form.code.label }}</label>
+                        {{ form.code }}
+                        <small class="text-muted">يرجى استخدام اختصار قصير مثل CS للحاسبات، MED للطب، الخ.</small>
+                        {% if form.code.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ form.code.errors }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-military">إضافة</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Faculty Modal -->
+<div class="modal fade" id="deleteFacultyModal" tabindex="-1" aria-labelledby="deleteFacultyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteFacultyModalLabel">تأكيد حذف الكلية</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                هل أنت متأكد من حذف الكلية "<span id="faculty-name-to-delete"></span>"؟
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    تحذير: سيتم حذف جميع الطلاب والتعيينات المرتبطة بهذه الكلية أيضًا.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="delete-faculty-form" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up the delete buttons
+        const deleteButtons = document.querySelectorAll('.delete-faculty');
+        const deleteForm = document.getElementById('delete-faculty-form');
+        const facultyNameSpan = document.getElementById('faculty-name-to-delete');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const facultyId = this.getAttribute('data-id');
+                const facultyName = this.getAttribute('data-name');
+
+                facultyNameSpan.textContent = facultyName;
+                deleteForm.action = `/faculties/delete/${facultyId}/`;
+            });
+        });
+
+        // Initialize the create modal if there are form errors
+        {% if form.errors %}
+            const createModal = new bootstrap.Modal(document.getElementById('createFacultyModal'));
+            createModal.show();
+        {% endif %}
+
+        // AJAX delete functionality
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const url = this.action;
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteFacultyModal'));
+                    modal.hide();
+
+                    // Show a temporary message
+                    showToast('تم حذف الكلية بنجاح، جاري إعادة تحميل الصفحة...', 'success');
+
+                    // Reload the page after a brief delay to show the toast
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast('حدثت مشكلة أثناء حذف الكلية: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('حدثت مشكلة أثناء الاتصال بالخادم', 'danger');
+            });
+        });
+
+        // Simple toast function for notifications
+        function showToast(message, type) {
+            const toastContainer = document.createElement('div');
+            toastContainer.style.position = 'fixed';
+            toastContainer.style.top = '20px';
+            toastContainer.style.right = '20px';
+            toastContainer.style.zIndex = '1050';
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+
+            // Remove from DOM after hiding
+            toast.addEventListener('hidden.bs.toast', function () {
+                document.body.removeChild(toastContainer);
+            });
+        }
+
+        // Auto-capitalize faculty code
+        const codeInput = document.getElementById('id_code');
+        if (codeInput) {
+            codeInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+            });
+        }
+    });
+</script>
+{% endblock %}

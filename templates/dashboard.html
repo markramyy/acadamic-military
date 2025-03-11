@@ -1,0 +1,996 @@
+{% extends "base.html" %}
+{% load dashboard_tags %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}لوحة التحكم{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Military theme colors */
+    :root {
+        --military-green: #4b5320;
+        --military-green-light: #606b28;
+        --military-sand: #d8c596;
+        --military-brown: #8a7444;
+        --military-gray: #5d5d5d;
+    }
+
+    .stats-card {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+        height: 100%;
+        border-top: 4px solid var(--military-green);
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--military-green);
+    }
+
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--military-gray);
+    }
+
+    .progress-military .progress-bar {
+        background-color: var(--military-green);
+    }
+
+    .table-military {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .table-military thead {
+        background-color: var(--military-green);
+        color: white;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .table-military thead th.rotated {
+        height: 150px;
+        white-space: nowrap;
+        vertical-align: bottom;
+        text-align: left;
+    }
+
+    .table-military thead th.rotated > div {
+        transform: translate(15px, 0px) rotate(315deg);
+        width: 30px;
+    }
+
+    .table-military thead th.rotated > div > span {
+        padding: 5px 10px;
+        display: inline-block;
+    }
+
+    .table-military tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .table-military tbody tr:hover {
+        background-color: rgba(216, 197, 150, 0.2);
+    }
+
+    .table-military tbody tr.faculty-header {
+        background-color: var(--military-sand);
+        font-weight: bold;
+    }
+
+    .student-chip {
+        display: inline-block;
+        background: var(--military-green-light);
+        color: white;
+        border-radius: 16px;
+        padding: 2px 8px;
+        margin: 2px;
+        font-size: 12px;
+    }
+
+    .faculty-badge {
+        background-color: var(--military-brown);
+        color: white;
+        font-size: 0.8rem;
+        padding: 3px 8px;
+        border-radius: 4px;
+        margin-right: 5px;
+    }
+
+    .cell-count {
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .assignment-wrapper {
+        max-height: 100px;
+        overflow-y: auto;
+        padding: 5px;
+    }
+
+    .btn-military {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .btn-military:hover {
+        background-color: var(--military-green-light);
+        color: white;
+    }
+
+    .nav-tabs .nav-link {
+        color: var(--military-green);
+    }
+
+    .nav-tabs .nav-link.active {
+        color: var(--military-green);
+        border-bottom: 3px solid var(--military-green);
+        font-weight: bold;
+    }
+
+    .dashboard-container {
+        position: relative;
+    }
+
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .spinner-military {
+        width: 3rem;
+        height: 3rem;
+        border: 0.25em solid var(--military-green);
+        border-right-color: transparent;
+    }
+
+    .student-group {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 8px;
+        border-left: 3px solid var(--military-green);
+        background-color: rgba(75, 83, 32, 0.05);
+    }
+
+    .student-item {
+        padding: 4px 0;
+    }
+
+    .faculty-badge {
+        background-color: var(--military-brown);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+    }
+
+    /* Make scrollbar prettier for student groups */
+    .student-group::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .student-group::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .student-group::-webkit-scrollbar-thumb {
+        background: var(--military-green);
+        border-radius: 10px;
+    }
+
+    .student-group::-webkit-scrollbar-thumb:hover {
+        background: var(--military-green-light);
+    }
+
+    .gender-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 4px;
+        margin-right: 4px;
+    }
+
+    .male-badge {
+        background-color: #3498db;
+        color: white;
+    }
+
+    .female-badge {
+        background-color: #e83e8c;
+        color: white;
+    }
+
+    .faculty-badge-large {
+        background-color: var(--military-brown);
+        color: white;
+        font-size: 0.85rem;
+        padding: 5px 10px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .serial-numbers {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        padding: 5px;
+    }
+
+    .serial-badge {
+        background-color: #eaeaea;
+        color: #333;
+        font-size: 0.9rem;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 4px;
+        border: 1px solid #ccc;
+    }
+
+    .serial-badge:hover {
+        background-color: #d0d0d0;
+    }
+
+    .student-group {
+        max-height: 150px;  /* Reduced height */
+        overflow-y: auto;
+        padding: 8px;
+        border-left: 3px solid var(--military-green);
+        background-color: rgba(75, 83, 32, 0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number">{{ stats.faculty_count }}</div>
+                    <div class="stats-label">الكليات</div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 text-center">
+                    <a href="{% url 'faculty_list' %}" class="btn btn-sm btn-outline-secondary">عرض الكليات</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stats-card">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number">{{ stats.research_count }}</div>
+                    <div class="stats-label">البحوث</div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 text-center">
+                    <a href="{% url 'research_list' %}" class="btn btn-sm btn-outline-secondary">عرض البحوث</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stats-card" style="border-top-color: #3498db;">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number" style="color: #3498db;">{{ stats.male_count }}</div>
+                    <div class="stats-label">طلاب (ذكور)</div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 text-center">
+                    <a href="{% url 'student_stats' %}?gender=M" class="btn btn-sm btn-outline-secondary">عرض الطلاب</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card stats-card" style="border-top-color: #e83e8c;">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number" style="color: #e83e8c;">{{ stats.female_count }}</div>
+                    <div class="stats-label">طالبات (إناث)</div>
+                </div>
+                <div class="card-footer bg-transparent border-top-0 text-center">
+                    <a href="{% url 'student_stats' %}?gender=F" class="btn btn-sm btn-outline-secondary">عرض الطالبات</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Nav Tabs -->
+    <ul class="nav nav-tabs mb-4" id="dashboardTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="male-tab" data-bs-toggle="tab"
+                    data-bs-target="#male-tab-pane" type="button" role="tab"
+                    aria-controls="male-tab-pane" aria-selected="true">
+                <i class="bi bi-gender-male me-1"></i> تعيينات الطلاب (ذكور)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="female-tab" data-bs-toggle="tab"
+                    data-bs-target="#female-tab-pane" type="button" role="tab"
+                    aria-controls="female-tab-pane" aria-selected="false">
+                <i class="bi bi-gender-female me-1"></i> تعيينات الطالبات (إناث)
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="summary-tab" data-bs-toggle="tab"
+                    data-bs-target="#summary-tab-pane" type="button" role="tab"
+                    aria-controls="summary-tab-pane" aria-selected="false">
+                ملخص توزيع البحوث
+            </button>
+        </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="dashboardTabContent">
+        <!-- Male Assignments View -->
+        <div class="tab-pane fade show active" id="male-tab-pane" role="tabpanel"
+            aria-labelledby="male-tab" tabindex="0">
+
+            <!-- Filters - Faculty and Research Only -->
+            <div class="card card-military mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="bi bi-gender-male me-1"></i> تعيينات الطلاب (ذكور)</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row align-items-end">
+                        <div class="col-md-4">
+                            <label for="faculty_m" class="form-label">الكلية</label>
+                            <select name="faculty_m" id="faculty_m" class="form-select">
+                                <option value="">جميع الكليات</option>
+                                {% for faculty in filter_faculties %}
+                                    <option value="{{ faculty.id }}" {% if faculty_filter_m|stringformat:"s" == faculty.id|stringformat:"s" %}selected{% endif %}>{{ faculty.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="research_m" class="form-label">البحث</label>
+                            <select name="research_m" id="research_m" class="form-select">
+                                <option value="">جميع البحوث</option>
+                                {% for research in filter_researches %}
+                                    <option value="{{ research.id }}" {% if research_filter_m|stringformat:"s" == research.id|stringformat:"s" %}selected{% endif %}>{{ research.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="serial_m" class="form-label">الرقم المسلسل</label>
+                            <input type="text" class="form-control" id="serial_m" name="serial_m" placeholder="ابحث..." value="{{ serial_filter_m|default:'' }}">
+                        </div>
+                        <input type="hidden" name="gender" value="M">
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-military w-100">بحث</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Export Buttons for Male Tab -->
+            <div class="d-flex justify-content-end mb-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2 export-btn"
+                        data-export-type="pdf" data-gender="M"
+                        data-faculty="{{ faculty_filter_m }}" data-research="{{ research_filter_m }}" data-serial="{{ serial_filter_m }}">
+                    <i class="bi bi-file-pdf me-1"></i> تصدير PDF
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary export-btn"
+                        data-export-type="csv" data-gender="M"
+                        data-faculty="{{ faculty_filter_m }}" data-research="{{ research_filter_m }}" data-serial="{{ serial_filter_m }}">
+                    <i class="bi bi-file-spreadsheet me-1"></i> تصدير CSV
+                </button>
+            </div>
+
+            <!-- Male Assignments Table -->
+            <div class="card card-military">
+                <div class="card-body">
+                    {% if male_page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-military w-100">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="width: 30%">البحث</th>
+                                    <th scope="col" style="width: 20%">الكلية</th>
+                                    <th scope="col" style="width: 50%">الطلاب</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% regroup male_page_obj by group_research_key as grouped_assignments %}
+                                {% for group in grouped_assignments %}
+                                    <tr>
+                                        <!-- Research name -->
+                                        <td class="align-top">{{ group.list.0.research.name }}</td>
+
+                                        <!-- Faculty name (shown once per group) -->
+                                        <td class="align-top">
+                                            <span class="faculty-badge-large">{{ group.list.0.student.faculty.name }}</span>
+                                        </td>
+
+                                        <!-- Students in this group (more compact) -->
+                                        <td>
+                                            <div class="student-group">
+                                                <div class="serial-numbers">
+                                                    {% for assignment in group.list %}
+                                                        <span class="serial-badge">{{ assignment.student.serial_number }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if male_page_obj.has_other_pages %}
+                    <div class="text-center mt-3 mb-2">
+                        <small class="text-muted">
+                            عرض {{ male_page_obj.start_index }}-{{ male_page_obj.end_index }} من {{ male_total_count }} بحث
+                            ({{ male_page_size }} بحث في الصفحة)
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Male Pagination -->
+                    {% if male_page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mt-4">
+                            {% if male_page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?gender=M&page_m=1{% if faculty_filter_m %}&faculty_m={{ faculty_filter_m }}{% endif %}{% if research_filter_m %}&research_m={{ research_filter_m }}{% endif %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?gender=M&page_m={{ male_page_obj.previous_page_number }}{% if faculty_filter_m %}&faculty_m={{ faculty_filter_m }}{% endif %}{% if research_filter_m %}&research_m={{ research_filter_m }}{% endif %}" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Previous">
+                                        <span aria-hidden="true">&laquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for i in male_page_obj.paginator.page_range %}
+                                {% if male_page_obj.number == i %}
+                                    <li class="page-item active"><a class="page-link" href="#">{{ i }}</a></li>
+                                {% elif i > male_page_obj.number|add:'-3' and i < male_page_obj.number|add:'3' %}
+                                    <li class="page-item"><a class="page-link" href="?gender=M&page_m={{ i }}{% if faculty_filter_m %}&faculty_m={{ faculty_filter_m }}{% endif %}{% if research_filter_m %}&research_m={{ research_filter_m }}{% endif %}">{{ i }}</a></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if male_page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?gender=M&page_m={{ male_page_obj.next_page_number }}{% if faculty_filter_m %}&faculty_m={{ faculty_filter_m }}{% endif %}{% if research_filter_m %}&research_m={{ research_filter_m }}{% endif %}" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?gender=M&page_m={{ male_page_obj.paginator.num_pages }}{% if faculty_filter_m %}&faculty_m={{ faculty_filter_m }}{% endif %}{% if research_filter_m %}&research_m={{ research_filter_m }}{% endif %}" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Next">
+                                        <span aria-hidden="true">&raquo;</span>
+                                    </a>
+                                </li>
+                                <li class="page-item disabled">
+                                    <a class="page-link" href="#" aria-label="Last">
+                                        <span aria-hidden="true">&raquo;&raquo;</span>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            لا توجد تعيينات للطلاب (ذكور) بعد. استخدم زر "توزيع البحوث عشوائياً" لإنشاء تعيينات جديدة.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Female Assignments View -->
+        <div class="tab-pane fade" id="female-tab-pane" role="tabpanel"
+            aria-labelledby="female-tab" tabindex="0">
+
+            <!-- Filters -->
+            <div class="card card-military mb-4">
+                <div class="card-header bg-pink text-white" style="background-color: #e83e8c;">
+                    <h5 class="mb-0"><i class="bi bi-gender-female me-1"></i> تعيينات الطالبات (إناث)</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row align-items-end">
+                        <div class="col-md-4">
+                            <label for="faculty_f" class="form-label">الكلية</label>
+                            <select name="faculty_f" id="faculty_f" class="form-select">
+                                <option value="">جميع الكليات</option>
+                                {% for faculty in filter_faculties %}
+                                    <option value="{{ faculty.id }}" {% if faculty_filter_f|stringformat:"s" == faculty.id|stringformat:"s" %}selected{% endif %}>{{ faculty.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="research_f" class="form-label">البحث</label>
+                            <select name="research_f" id="research_f" class="form-select">
+                                <option value="">جميع البحوث</option>
+                                {% for research in filter_researches %}
+                                    <option value="{{ research.id }}" {% if research_filter_f|stringformat:"s" == research.id|stringformat:"s" %}selected{% endif %}>{{ research.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="serial_f" class="form-label">الرقم العسكري</label>
+                            <input type="text" class="form-control" id="serial_f" name="serial_f" placeholder="ابحث..." value="{{ serial_filter_f|default:'' }}">
+                        </div>
+                        <input type="hidden" name="gender" value="F">
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-military w-100" style="background-color: #e83e8c;">بحث</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Export Buttons for Female Tab -->
+            <div class="d-flex justify-content-end mb-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary me-2 export-btn"
+                        data-export-type="pdf" data-gender="F"
+                        data-faculty="{{ faculty_filter_f }}" data-research="{{ research_filter_f }}" data-serial="{{ serial_filter_f }}">
+                    <i class="bi bi-file-pdf me-1"></i> تصدير PDF
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary export-btn"
+                        data-export-type="csv" data-gender="F"
+                        data-faculty="{{ faculty_filter_f }}" data-research="{{ research_filter_f }}" data-serial="{{ serial_filter_f }}">
+                    <i class="bi bi-file-spreadsheet me-1"></i> تصدير CSV
+                </button>
+            </div>
+
+            <!-- Female Assignments Table -->
+            <div class="card card-military">
+                <div class="card-body">
+                    {% if female_page_obj %}
+                    <div class="table-responsive">
+                        <table class="table table-military w-100">
+                            <thead>
+                                <tr>
+                                    <th scope="col" style="width: 30%">البحث</th>
+                                    <th scope="col" style="width: 20%">الكلية</th>
+                                    <th scope="col" style="width: 50%">الطالبات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% regroup female_page_obj by group_research_key as grouped_assignments %}
+                                {% for group in grouped_assignments %}
+                                    <tr>
+                                        <!-- Research name -->
+                                        <td class="align-top">{{ group.list.0.research.name }}</td>
+
+                                        <!-- Faculty name (shown once per group) -->
+                                        <td class="align-top">
+                                            <span class="faculty-badge-large">{{ group.list.0.student.faculty.name }}</span>
+                                        </td>
+
+                                        <!-- Students in this group (more compact) -->
+                                        <td>
+                                            <div class="student-group">
+                                                <div class="serial-numbers">
+                                                    {% for assignment in group.list %}
+                                                        <span class="serial-badge">{{ assignment.student.serial_number }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if female_page_obj.has_other_pages %}
+                    <div class="text-center mt-3 mb-2">
+                        <small class="text-muted">
+                            عرض {{ female_page_obj.start_index }}-{{ female_page_obj.end_index }} من {{ female_total_count }} بحث
+                            ({{ female_page_size }} بحث في الصفحة)
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Female Pagination -->
+                    {% if female_page_obj.has_other_pages %}
+                    <nav aria-label="Page navigation">
+                        <ul class="pagination justify-content-center mt-4">
+                            <!-- Similar pagination links structure but with gender=F and page_f parameter -->
+                            {% if female_page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?gender=F&page_f=1{% if faculty_filter_f %}&faculty_f={{ faculty_filter_f }}{% endif %}{% if research_filter_f %}&research_f={{ research_filter_f }}{% endif %}" aria-label="First">
+                                        <span aria-hidden="true">&laquo;&laquo;</span>
+                                    </a>
+                                </li>
+                                <!-- More pagination links... -->
+                            {% endif %}
+                            <!-- ... -->
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                        <div class="alert alert-info text-center">
+                            لا توجد تعيينات للطالبات (إناث) بعد. استخدم زر "توزيع البحوث عشوائياً" لإنشاء تعيينات جديدة.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Tab -->
+        <div class="tab-pane fade" id="summary-tab-pane" role="tabpanel" aria-labelledby="summary-tab" tabindex="0">
+            <div class="row">
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">إحصائيات الكليات</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>الكلية</th>
+                                            <th>عدد الطلاب</th>
+                                            <th>ذكور</th>
+                                            <th>إناث</th>
+                                            <th>عدد التعيينات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for faculty in faculties %}
+                                            <tr>
+                                                <td>{{ faculty.name }}</td>
+                                                <td>{{ faculty.student_count }}</td>
+                                                <td>{{ faculty.male_count|default:"0" }}</td>
+                                                <td>{{ faculty.female_count|default:"0" }}</td>
+                                                <td>{{ faculty.assigned_count }}</td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="5" class="text-center">لا توجد كليات مسجلة</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Research Statistics -->
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h5 class="card-title mb-0">إحصائيات البحوث</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>البحث</th>
+                                            <th>عدد التعيينات</th>
+                                            <th>عدد المجموعات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for research in researches %}
+                                            <tr>
+                                                <td>{{ research.name }}</td>
+                                                <td>
+                                                    {% with count=faculties|get_research_assignment_count:research.id %}
+                                                        {{ count }}
+                                                    {% endwith %}
+                                                </td>
+                                                <td>
+                                                    {% with group_count=faculties|get_research_group_count:research.id %}
+                                                        {{ group_count }}
+                                                    {% endwith %}
+                                                </td>
+                                            </tr>
+                                        {% empty %}
+                                            <tr>
+                                                <td colspan="3" class="text-center">لا توجد بحوث مسجلة</td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assignment Modal -->
+    <div class="modal fade" id="assignModal" tabindex="-1" aria-labelledby="assignModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--military-green); color: white;">
+                    <h5 class="modal-title" id="assignModalLabel">توزيع البحوث</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        سيتم توزيع البحوث بشكل عشوائي على الطلاب غير المعينين. يمكنك أيضاً حذف التعيينات الحالية وإنشاء توزيع جديد لجميع الطلاب.
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">حجم المجموعة</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control" id="groupSize" name="group_size" min="1" max="100" value="1" required>
+                            <span class="input-group-text">طالب لكل بحث</span>
+                        </div>
+                        <div class="form-text">
+                            حدد عدد الطلاب الذين سيعملون معًا على نفس البحث (من 1 إلى 100)
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="clearExisting">
+                            <label class="form-check-label" for="clearExisting">
+                                حذف التعيينات الحالية وإعادة توزيع جميع الطلاب
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <form id="randomizeForm" action="{% url 'assignment_randomize' %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="clear_existing" id="clearExistingInput" value="false">
+                        <input type="hidden" name="group_size" id="groupSizeInput" value="1">
+                        <button type="submit" class="btn btn-military">توزيع البحوث</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header" style="background-color: var(--military-green); color: white;">
+                    <h5 class="modal-title" id="exportModalLabel">بيانات الدورة للتصدير PDF</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="exportForm">
+                        <input type="hidden" id="exportType" name="export_type" value="">
+                        <input type="hidden" id="exportGender" name="gender" value="">
+                        <input type="hidden" id="exportFaculty" name="faculty" value="">
+                        <input type="hidden" id="exportResearch" name="research" value="">
+                        <input type="hidden" id="exportSerial" name="serial_number">
+
+                        <div class="mb-3">
+                            <label for="courseNumber" class="form-label">رقم الدورة</label>
+                            <input type="text" class="form-control" id="courseNumber" name="course_number" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="startDate" class="form-label">تاريخ البداية</label>
+                            <input type="date" class="form-control" id="startDate" name="start_date" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="endDate" class="form-label">تاريخ النهاية</label>
+                            <input type="date" class="form-control" id="endDate" name="end_date" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-military" id="confirmExport">تصدير</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle the clear existing checkbox
+        const clearExistingCheckbox = document.getElementById('clearExisting');
+        const clearExistingInput = document.getElementById('clearExistingInput');
+        const randomizeForm = document.getElementById('randomizeForm');
+        const groupSizeInput = document.getElementById('groupSize');
+        const groupSizeHiddenInput = document.getElementById('groupSizeInput');
+        const urlParams = new URLSearchParams(window.location.search);
+        const gender = urlParams.get('gender');
+
+        if (gender) {
+            if (gender === 'F') {
+                // Show female tab
+                const femaleTab = document.getElementById('female-tab');
+                if (femaleTab) {
+                    const tab = new bootstrap.Tab(femaleTab);
+                    tab.show();
+                }
+            } else {
+                // Show male tab
+                const maleTab = document.getElementById('male-tab');
+                if (maleTab) {
+                    const tab = new bootstrap.Tab(maleTab);
+                    tab.show();
+                }
+            }
+        }
+
+        document.getElementById('male-tab').addEventListener('shown.bs.tab', function (e) {
+            const url = new URL(window.location);
+            url.searchParams.set('gender', 'M');
+            window.history.replaceState({}, '', url);
+        });
+
+        document.getElementById('female-tab').addEventListener('shown.bs.tab', function (e) {
+            const url = new URL(window.location);
+            url.searchParams.set('gender', 'F');
+            window.history.replaceState({}, '', url);
+        });
+
+        if (clearExistingCheckbox && clearExistingInput) {
+            clearExistingCheckbox.addEventListener('change', function() {
+                clearExistingInput.value = this.checked ? 'true' : 'false';
+            });
+        }
+
+        if (groupSizeInput && groupSizeHiddenInput) {
+            groupSizeInput.addEventListener('change', function() {
+                // Validate the input (minimum 1, maximum 100)
+                let value = parseInt(this.value);
+                if (isNaN(value) || value < 1) {
+                    value = 1;
+                    this.value = 1;
+                } else if (value > 100) {
+                    value = 100;
+                    this.value = 100;
+                }
+
+                groupSizeHiddenInput.value = value;
+            });
+
+            // Initialize the hidden input
+            groupSizeHiddenInput.value = groupSizeInput.value;
+        }
+
+        // Show loading overlay during form submission
+        if (randomizeForm) {
+            randomizeForm.addEventListener('submit', function() {
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = `
+                    <div class="spinner-border spinner-military" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                `;
+
+                document.querySelector('.dashboard-container').appendChild(loadingOverlay);
+            });
+        }
+    });
+
+    document.querySelectorAll('.export-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const exportType = this.getAttribute('data-export-type');
+            const gender = this.getAttribute('data-gender');
+            const faculty = this.getAttribute('data-faculty') || '';
+            const research = this.getAttribute('data-research') || '';
+            const serial = this.getAttribute('data-serial') || '';
+
+            // For CSV export, proceed directly without modal
+            if (exportType === 'csv') {
+                let url = `/export/assignments/csv/?gender=${gender}`;
+
+                // Add optional parameters
+                if (faculty && faculty.toLowerCase() !== 'none') url += `&faculty=${faculty}`;
+                if (research && research.toLowerCase() !== 'none') url += `&research=${research}`;
+                if (serial) url += `&serial=${serial}`;
+
+                // Trigger download immediately
+                window.location.href = url;
+                return;
+            }
+
+            // For PDF export, show the modal
+            // Set values in the form
+            document.getElementById('exportType').value = exportType;
+            document.getElementById('exportGender').value = gender;
+            document.getElementById('exportFaculty').value = faculty;
+            document.getElementById('exportResearch').value = research;
+            document.getElementById('exportSerial').value = serial;
+
+            // Set modal title based on gender
+            const genderText = gender === 'M' ? 'الطلاب (ذكور)' : 'الطالبات (إناث)';
+            document.getElementById('exportModalLabel').textContent =
+                `بيانات الدورة لتصدير PDF - ${genderText}`;
+
+            // Show the modal
+            const exportModal = new bootstrap.Modal(document.getElementById('exportModal'));
+            exportModal.show();
+        });
+    });
+
+    // Handle export confirmation
+    document.getElementById('confirmExport').addEventListener('click', function() {
+        const form = document.getElementById('exportForm');
+
+        // Basic form validation
+        if (form.checkValidity()) {
+            // Get form values
+            const exportType = document.getElementById('exportType').value;
+            const gender = document.getElementById('exportGender').value;
+            const faculty = document.getElementById('exportFaculty').value;
+            const research = document.getElementById('exportResearch').value;
+            const serial = document.getElementById('exportSerial').value;
+            const courseNumber = document.getElementById('courseNumber').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+
+            // Build URL with all parameters
+            let url;
+            if (exportType === 'pdf') {
+                url = `/export/assignments/pdf/?gender=${gender}`;
+            } else {
+                url = `/export/assignments/csv/?gender=${gender}`;
+            }
+
+            // Add optional parameters
+            if (faculty && faculty.toLowerCase() !== 'none') url += `&faculty=${faculty}`;
+            if (research && research.toLowerCase() !== 'none') url += `&research=${research}`;
+            if (serial) url += `&serial=${serial}`;
+            if (courseNumber) url += `&course_number=${courseNumber}`;
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+
+            // Hide modal
+            const exportModal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
+            exportModal.hide();
+
+            // Trigger download
+            window.location.href = url;
+        } else {
+            // Trigger HTML5 validation
+            form.reportValidity();
+        }
+    });
+
+    // Reset form when modal is closed
+    document.getElementById('exportModal').addEventListener('hidden.bs.modal', function () {
+        document.getElementById('exportForm').reset();
+    });
+
+</script>
+{% endblock %}

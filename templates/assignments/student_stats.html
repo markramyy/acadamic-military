@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}إحصائيات الطلاب{% endblock %}
+{% block page_title %}إحصائيات الطلاب{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Military theme colors */
+    :root {
+        --military-green: #4b5320;
+        --military-green-light: #606b28;
+        --military-sand: #d8c596;
+        --military-brown: #8a7444;
+        --military-gray: #5d5d5d;
+    }
+
+    .table-military {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+    }
+
+    .table-military thead {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .table-military tbody tr:hover {
+        background-color: rgba(216, 197, 150, 0.2);
+    }
+
+    .btn-military {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .btn-military:hover {
+        background-color: var(--military-green-light);
+        color: white;
+    }
+
+    .btn-military-danger {
+        background-color: #8b0000;
+        color: white;
+    }
+
+    .btn-military-danger:hover {
+        background-color: #a52a2a;
+        color: white;
+    }
+
+    .card-military {
+        border: 1px solid #dee2e6;
+        border-top: 4px solid var(--military-green);
+    }
+
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--military-green);
+    }
+
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--military-gray);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-4">
+            <div class="card card-military">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number">{{ total_students }}</div>
+                    <div class="stats-label">إجمالي عدد الطلاب</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-military" style="border-top-color: #3498db;">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number" style="color: #3498db;">{{ total_male }}</div>
+                    <div class="stats-label">طلاب (ذكور)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-military" style="border-top-color: #e83e8c;">
+                <div class="card-body text-center py-4">
+                    <div class="stats-number" style="color: #e83e8c;">{{ total_female }}</div>
+                    <div class="stats-label">طالبات (إناث)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card card-military">
+                <div class="card-body">
+                    <form method="get" class="row">
+                        <div class="col-md-5">
+                            <label for="{{ filter_form.faculty.id_for_label }}" class="form-label">{{ filter_form.faculty.label }}</label>
+                            {{ filter_form.faculty }}
+                        </div>
+                        <div class="col-md-5">
+                            <label for="{{ filter_form.gender.id_for_label }}" class="form-label">{{ filter_form.gender.label }}</label>
+                            {{ filter_form.gender }}
+                        </div>
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-military w-100">
+                                <i class="bi bi-filter me-1"></i> تصفية
+                            </button>
+                        </div>
+                        {% if selected_faculty or selected_gender %}
+                        <div class="col-12 mt-2 text-end">
+                            <a href="{% url 'student_stats' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i> إلغاء التصفية
+                            </a>
+                        </div>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card card-military">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">توزيع الطلاب حسب الكلية</h5>
+            <a href="{% url 'student_create' %}" class="btn btn-military">
+                <i class="bi bi-person-plus me-1"></i> إنشاء طلاب
+            </a>
+        </div>
+        <div class="card-body">
+            {% if faculty_stats %}
+                <div class="table-responsive">
+                    <table class="table table-military">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">الكلية</th>
+                                <th scope="col">رمز الكلية</th>
+                                <th scope="col" class="text-center">إجمالي الطلاب</th>
+                                <th scope="col" class="text-center">ذكور</th>
+                                <th scope="col" class="text-center">إناث</th>
+                                <th scope="col" class="text-center">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for faculty in faculty_stats %}
+                                <tr id="faculty-row-{{ faculty.id }}">
+                                    <td>{{ forloop.counter }}</td>
+                                    <td>{{ faculty.name }}</td>
+                                    <td><span class="badge bg-secondary">{{ faculty.code }}</span></td>
+                                    <td class="text-center">{{ faculty.student_count }}</td>
+                                    <td class="text-center">{{ faculty.male_count }}</td>
+                                    <td class="text-center">{{ faculty.female_count }}</td>
+                                    <td class="text-center">
+                                        {% if faculty.student_count > 0 %}
+                                            <button type="button" class="btn btn-military-danger btn-sm delete-students"
+                                                    data-id="{{ faculty.id }}" data-name="{{ faculty.name }}" data-count="{{ faculty.student_count }}"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteStudentsModal">
+                                                <i class="bi bi-trash me-1"></i> حذف جميع الطلاب
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted">لا يوجد طلاب</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-secondary">
+                            <tr>
+                                <td colspan="3" class="fw-bold">الإجمالي</td>
+                                <td class="text-center fw-bold">{{ total_students }}</td>
+                                <td class="text-center fw-bold">{{ total_male }}</td>
+                                <td class="text-center fw-bold">{{ total_female }}</td>
+                                <td class="text-center"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            {% else %}
+                <div class="alert alert-info text-center">
+                    لا توجد كليات مسجلة بعد. قم بإضافة كليات أولاً.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Delete Students Modal -->
+<div class="modal fade" id="deleteStudentsModal" tabindex="-1" aria-labelledby="deleteStudentsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteStudentsModalLabel">تأكيد حذف الطلاب</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>
+                    هل أنت متأكد من حذف جميع الطلاب (<span id="student-count-to-delete"></span>)
+                    من كلية "<span id="faculty-name-to-delete"></span>"؟
+                </p>
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    تحذير: سيتم حذف جميع التعيينات المرتبطة بهؤلاء الطلاب أيضًا.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="delete-students-form" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up delete buttons
+        const deleteButtons = document.querySelectorAll('.delete-students');
+        const deleteForm = document.getElementById('delete-students-form');
+        const facultyNameSpan = document.getElementById('faculty-name-to-delete');
+        const studentCountSpan = document.getElementById('student-count-to-delete');
+
+        deleteButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const facultyId = this.getAttribute('data-id');
+                const facultyName = this.getAttribute('data-name');
+                const studentCount = this.getAttribute('data-count');
+
+                facultyNameSpan.textContent = facultyName;
+                studentCountSpan.textContent = studentCount;
+                deleteForm.action = `/assignments/students/delete-all/${facultyId}/`;
+            });
+        });
+
+        // AJAX delete functionality
+        deleteForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const url = this.action;
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Close the modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('deleteStudentsModal'));
+                    modal.hide();
+
+                    // Show success message and reload page
+                    showToast('تم حذف الطلاب بنجاح، جاري إعادة تحميل الصفحة...', 'success');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast('حدثت مشكلة أثناء حذف الطلاب: ' + data.error, 'danger');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('حدثت مشكلة أثناء الاتصال بالخادم', 'danger');
+            });
+        });
+
+        // Auto-submit the filter form when faculty selection changes
+        const facultySelect = document.getElementById('id_faculty');
+        if (facultySelect) {
+            facultySelect.addEventListener('change', function() {
+                this.form.submit();
+            });
+        }
+
+        // Simple toast function for notifications
+        function showToast(message, type) {
+            const toastContainer = document.createElement('div');
+            toastContainer.style.position = 'fixed';
+            toastContainer.style.top = '20px';
+            toastContainer.style.right = '20px';
+            toastContainer.style.zIndex = '1050';
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+
+            // Remove from DOM after hiding
+            toast.addEventListener('hidden.bs.toast', function () {
+                document.body.removeChild(toastContainer);
+            });
+        }
+    });
+</script>
+{% endblock %}

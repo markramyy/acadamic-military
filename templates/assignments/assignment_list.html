@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}توزيع البحوث{% endblock %}
+{% block page_title %}توزيع البحوث العشوائي{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Military theme colors */
+    :root {
+        --military-green: #4b5320;
+        --military-green-light: #606b28;
+        --military-sand: #d8c596;
+        --military-brown: #8a7444;
+        --military-gray: #5d5d5d;
+    }
+
+    .btn-military {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .btn-military:hover {
+        background-color: var(--military-green-light);
+        color: white;
+    }
+
+    .btn-military-danger {
+        background-color: #8b0000;
+        color: white;
+    }
+
+    .btn-military-danger:hover {
+        background-color: #a52a2a;
+        color: white;
+    }
+
+    .card-military {
+        border: 1px solid #dee2e6;
+        border-top: 4px solid var(--military-green);
+    }
+
+    .stats-card {
+        transition: transform 0.2s;
+        cursor: default;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .stats-number {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: var(--military-green);
+    }
+
+    .stats-label {
+        font-size: 0.9rem;
+        color: var(--military-gray);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Action buttons -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card card-military">
+                <div class="card-header">
+                    <h5 class="mb-0">إدارة توزيع البحوث</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle me-2"></i>
+                        من هنا يمكنك توزيع البحوث بشكل عشوائي على الطلاب. لعرض التعيينات، يرجى الذهاب إلى <a href="{% url 'home' %}" class="alert-link">لوحة التحكم</a>.
+                    </div>
+
+                    <div class="d-flex justify-content-around flex-wrap">
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-military" data-bs-toggle="modal" data-bs-target="#randomizeModal">
+                                <i class="bi bi-shuffle me-1"></i> توزيع البحوث عشوائياً
+                            </button>
+                        </div>
+                        {% if total_count > 0 %}
+                        <div class="mb-2">
+                            <button type="button" class="btn btn-military-danger" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                                <i class="bi bi-trash me-1"></i> حذف جميع التعيينات
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Randomization Description Card -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card card-military">
+                <div class="card-header">
+                    <h5 class="mb-0">آلية توزيع البحوث</h5>
+                </div>
+                <div class="card-body">
+                    <p>يتم توزيع البحوث على الطلاب بشكل عشوائي، بحيث:</p>
+                    <ul>
+                        <li>يمكن تعيين نفس البحث لعدة طلاب من كليات مختلفة</li>
+                        <li>يمكن تعيين نفس البحث لعدة طلاب من نفس الكلية</li>
+                        <li>يتم تعيين بحث واحد فقط لكل طالب</li>
+                    </ul>
+                    <p>خيارات التوزيع:</p>
+                    <ul>
+                        <li><strong>توزيع للطلاب غير المعينين فقط:</strong> سيتم تعيين البحوث فقط للطلاب الذين لا يملكون تعيين حالياً، دون المساس بالتعيينات الحالية.</li>
+                        <li><strong>حذف التعيينات الحالية وإعادة التوزيع:</strong> سيتم حذف جميع التعيينات الحالية وإنشاء توزيع جديد لجميع الطلاب.</li>
+                        <li><strong>حجم المجموعة:</strong> يمكنك تحديد عدد الطلاب الذين سيعملون معاً على نفس البحث.</li>
+                    </ul>
+                    <p>أمثلة لحجم المجموعة:</p>
+                    <ul>
+                        <li><strong>1 طالب:</strong> كل طالب يقوم بالبحث بشكل فردي.</li>
+                        <li><strong>2 طالب:</strong> يتم توزيع الطلاب في مجموعات من طالبين من نفس الكلية، حيث يعمل كلاهما على نفس البحث.</li>
+                        <li><strong>5 طلاب:</strong> يتم توزيع الطلاب في مجموعات من خمسة طلاب من نفس الكلية، حيث يعملون معاً على نفس البحث.</li>
+                    </ul>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>ملاحظة هامة:</strong> المجموعات تتكون فقط من طلاب نفس الكلية، وإذا كان عدد الطلاب في كلية معينة غير قابل للقسمة على حجم المجموعة، سيتم توزيع الطلاب المتبقين بشكل فردي.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Randomize Modal -->
+<div class="modal fade" id="randomizeModal" tabindex="-1" aria-labelledby="randomizeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background-color: var(--military-green); color: white;">
+                <h5 class="modal-title" id="randomizeModalLabel">توزيع البحوث عشوائياً</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل تريد توزيع البحوث عشوائياً على الطلاب؟</p>
+
+                <div class="mb-4">
+                    <label class="form-label">حجم المجموعة</label>
+                    <div class="input-group">
+                        <input type="number" class="form-control" id="group_size" name="group_size" min="1" max="100" value="1" required>
+                        <span class="input-group-text">طالب لكل بحث</span>
+                    </div>
+                    <div class="form-text">
+                        حدد عدد الطلاب الذين سيعملون معًا على نفس البحث (من 1 إلى 100)
+                    </div>
+                </div>
+
+                {% if total_count > 0 %}
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="clear_existing">
+                    <label class="form-check-label" for="clear_existing">
+                        حذف التعيينات الموجودة ({{ total_count }}) وإنشاء تعيينات جديدة
+                    </label>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    تحذير: إذا لم تقم بتحديد خيار الحذف، سيتم تعيين البحوث فقط للطلاب الذين ليس لديهم تعيينات ({{ unassigned_students }} طالب).
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    سيتم تعيين البحوث لجميع الطلاب المسجلين.
+                </div>
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="randomize-form" action="{% url 'assignment_randomize' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" id="clear_existing_input" name="clear_existing" value="false">
+                    <input type="hidden" id="group_size_input" name="group_size" value="1">
+                    <button type="submit" class="btn btn-military">توزيع</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete All Modal -->
+<div class="modal fade" id="deleteAllModal" tabindex="-1" aria-labelledby="deleteAllModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteAllModalLabel">حذف جميع التعيينات</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>هل أنت متأكد من حذف جميع تعيينات البحوث ({{ total_count }})؟</p>
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    تحذير: لا يمكن التراجع عن هذا الإجراء!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <form id="delete-all-form" action="{% url 'assignment_delete_all' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">تأكيد الحذف</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle clear existing checkbox
+        const clearExistingCheckbox = document.getElementById('clear_existing');
+        const clearExistingInput = document.getElementById('clear_existing_input');
+
+        if (clearExistingCheckbox && clearExistingInput) {
+            clearExistingCheckbox.addEventListener('change', function() {
+                clearExistingInput.value = this.checked ? 'true' : 'false';
+            });
+
+            // Initialize the hidden input
+            clearExistingInput.value = clearExistingCheckbox.checked ? 'true' : 'false';
+        }
+
+        // Handle group size input
+        const groupSizeInput = document.getElementById('group_size');
+        const groupSizeHiddenInput = document.getElementById('group_size_input');
+
+        if (groupSizeInput && groupSizeHiddenInput) {
+            groupSizeInput.addEventListener('change', function() {
+                // Validate the input (minimum 1, maximum 100)
+                let value = parseInt(this.value);
+                if (isNaN(value) || value < 1) {
+                    value = 1;
+                    this.value = 1;
+                } else if (value > 100) {
+                    value = 100;
+                    this.value = 100;
+                }
+
+                groupSizeHiddenInput.value = value;
+            });
+
+            // Initialize the hidden input
+            groupSizeHiddenInput.value = groupSizeInput.value;
+        }
+
+        // AJAX delete all functionality
+        const deleteAllForm = document.getElementById('delete-all-form');
+
+        if (deleteAllForm) {
+            deleteAllForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const url = this.action;
+
+                fetch(url, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close the modal
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteAllModal'));
+                        modal.hide();
+
+                        // Show success message and reload page
+                        showToast('تم حذف جميع التعيينات بنجاح، جاري إعادة تحميل الصفحة...', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showToast('حدثت مشكلة أثناء حذف التعيينات: ' + data.error, 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('حدثت مشكلة أثناء الاتصال بالخادم', 'danger');
+                });
+            });
+        }
+
+        // Simple toast function for notifications
+        function showToast(message, type) {
+            const toastContainer = document.createElement('div');
+            toastContainer.style.position = 'fixed';
+            toastContainer.style.top = '20px';
+            toastContainer.style.right = '20px';
+            toastContainer.style.zIndex = '1050';
+
+            const toast = document.createElement('div');
+            toast.className = `toast align-items-center text-white bg-${type} border-0`;
+            toast.setAttribute('role', 'alert');
+            toast.setAttribute('aria-live', 'assertive');
+            toast.setAttribute('aria-atomic', 'true');
+
+            toast.innerHTML = `
+                <div class="d-flex">
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            `;
+
+            toastContainer.appendChild(toast);
+            document.body.appendChild(toastContainer);
+
+            const bsToast = new bootstrap.Toast(toast, {
+                autohide: true,
+                delay: 5000
+            });
+            bsToast.show();
+
+            // Remove from DOM after hiding
+            toast.addEventListener('hidden.bs.toast', function () {
+                document.body.removeChild(toastContainer);
+            });
+        }
+    });
+</script>
+{% endblock %}

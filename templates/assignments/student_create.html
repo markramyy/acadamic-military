@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}إنشاء طلاب{% endblock %}
+{% block page_title %}إنشاء طلاب{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Military theme colors */
+    :root {
+        --military-green: #4b5320;
+        --military-green-light: #606b28;
+        --military-sand: #d8c596;
+        --military-brown: #8a7444;
+        --military-gray: #5d5d5d;
+    }
+
+    .card-military {
+        border: 1px solid #dee2e6;
+        border-top: 4px solid var(--military-green);
+    }
+
+    .btn-military {
+        background-color: var(--military-green);
+        color: white;
+    }
+
+    .btn-military:hover {
+        background-color: var(--military-green-light);
+        color: white;
+    }
+
+    .form-label {
+        font-weight: 500;
+    }
+
+    .hint-text {
+        color: var(--military-gray);
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card card-military">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">إنشاء طلاب جدد</h5>
+                    <a href="{% url 'student_stats' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-right me-1"></i> العودة للإحصائيات
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        قم بتحديد الكلية وعدد الطلاب المراد إنشاؤهم. سيتم إنشاء طلاب بأرقام تسلسلية متتالية.
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <div class="mb-3">
+                            <label for="{{ form.faculty.id_for_label }}" class="form-label">{{ form.faculty.label }}</label>
+                            {{ form.faculty }}
+                            {% if form.faculty.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.faculty.errors }}
+                                </div>
+                            {% endif %}
+                            <div class="hint-text mt-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                اختر الكلية التي تريد إنشاء طلاب لها
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="{{ form.count.id_for_label }}" class="form-label">{{ form.count.label }}</label>
+                            {{ form.count }}
+                            {% if form.count.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.count.errors }}
+                                </div>
+                            {% endif %}
+                            <div class="hint-text mt-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                أدخل عدد الطلاب المراد إنشاؤهم (الحد الأقصى 1000)
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }}</label>
+                            {{ form.gender }}
+                            {% if form.gender.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.gender.errors }}
+                                </div>
+                            {% endif %}
+                            <div class="hint-text mt-1">
+                                <i class="bi bi-exclamation-circle"></i>
+                                حدد جنس الطلاب المراد إنشاؤهم
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'student_stats' %}" class="btn btn-secondary">إلغاء</a>
+                            <button type="submit" class="btn btn-military">
+                                <i class="bi bi-person-plus me-1"></i> إنشاء الطلاب
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
