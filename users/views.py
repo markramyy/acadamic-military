@@ -47,7 +47,7 @@ def export_database(request):
 
         # Export Faculties
         faculty_file = os.path.join(export_dir, f'faculties_{timestamp}.csv')
-        with open(faculty_file, 'w', newline='', encoding='utf-8') as f:
+        with open(faculty_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
             writer.writerow(['Name', 'Code'])
             for faculty in Faculty.objects.all():
@@ -56,7 +56,7 @@ def export_database(request):
 
         # Export Researches
         research_file = os.path.join(export_dir, f'researches_{timestamp}.csv')
-        with open(research_file, 'w', newline='', encoding='utf-8') as f:
+        with open(research_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
             writer.writerow(['اسم البحث'])
             for research in Research.objects.all():
@@ -65,7 +65,7 @@ def export_database(request):
 
         # Export Students
         student_file = os.path.join(export_dir, f'students_{timestamp}.csv')
-        with open(student_file, 'w', newline='', encoding='utf-8') as f:
+        with open(student_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
             writer.writerow(['Name', 'Serial Number', 'Faculty', 'Gender'])
             for student in Student.objects.all():
@@ -79,7 +79,7 @@ def export_database(request):
 
         # Export Assignments
         assignment_file = os.path.join(export_dir, f'assignments_{timestamp}.csv')
-        with open(assignment_file, 'w', newline='', encoding='utf-8') as f:
+        with open(assignment_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
             writer.writerow(['Student', 'Serial Number', 'Faculty', 'Research', 'Assigned Date'])
             for assignment in Assignment.objects.all():
@@ -94,7 +94,7 @@ def export_database(request):
 
         # Export Course Information
         course_info_file = os.path.join(export_dir, f'course_info_{timestamp}.csv')
-        with open(course_info_file, 'w', newline='', encoding='utf-8') as f:
+        with open(course_info_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
             writer.writerow(['Course Number', 'Start Date', 'End Date', 'Export Date'])
             writer.writerow([
@@ -107,26 +107,42 @@ def export_database(request):
 
         # Create a zip file containing all CSVs
         import zipfile
-        # Format zip filename according to the requirement
-        zip_filename = f'الدورة_العسكرية_{course_number}_من_{start_date_formatted}_الى_{end_date_formatted}.zip'
-        zip_filepath = os.path.join(export_dir, zip_filename)
+        # Use ASCII filename for the zip to ensure cross-platform compatibility
+        ascii_zip_filename = f'military_course_{course_number}_{start_date_formatted}_{end_date_formatted}.zip'
+        zip_filepath = os.path.join(export_dir, ascii_zip_filename)
 
-        with zipfile.ZipFile(zip_filepath, 'w') as zip_ref:
+        # Create the zip file with more compatible settings
+        with zipfile.ZipFile(zip_filepath, 'w', zipfile.ZIP_DEFLATED) as zip_ref:
+            # Add each file with its original name inside the zip
             for file in exported_files:
+                # Add the file with a readable name that works across platforms
                 zip_ref.write(file, os.path.basename(file))
+
+            # Also add a readme file explaining the Arabic filename
+            readme_content = f"""
+            هذا الملف يحتوي على بيانات:
+            الدورة العسكرية {course_number}
+            من تاريخ {start_date}
+            إلى تاريخ {end_date}
+            """
+            readme_path = os.path.join(export_dir, "readme.txt")
+            with open(readme_path, 'w', encoding='utf-8-sig') as readme_file:
+                readme_file.write(readme_content)
+            zip_ref.write(readme_path, "readme.txt")
+            try:
+                os.remove(readme_path)
+            except Exception:
+                pass
 
         # Serve the zip file for download
         with open(zip_filepath, 'rb') as f:
             response = HttpResponse(f.read(), content_type='application/zip')
 
-            # Fix filename encoding for Unicode/Arabic text in Content-Disposition
-            # Using both UTF-8 and fallback filename for browsers that don't support UTF-8 encoding
-            import urllib.parse
-            encoded_filename = urllib.parse.quote(zip_filename)
-            fallback_filename = f'military_course_{course_number}_{start_date_formatted}_{end_date_formatted}.zip'
+            # Use a display filename that's both Arabic-friendly and cross-platform
+            display_filename = f'military_course_{course_number}_{start_date_formatted}_{end_date_formatted}.zip'
 
-            content_disposition = f'attachment; filename="{fallback_filename}"; filename*=UTF-8\'\'{encoded_filename}'
-            response['Content-Disposition'] = content_disposition
+            # Set a simpler content disposition for better cross-platform support
+            response['Content-Disposition'] = f'attachment; filename="{display_filename}"'
 
             # Clean up individual CSV files
             for file in exported_files:
