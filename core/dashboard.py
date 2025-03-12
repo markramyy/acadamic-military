@@ -153,7 +153,7 @@ def dashboard(request):
     female_data = get_filtered_assignments(request, 'F', 'faculty_f', 'research_f', 'page_f', 'serial_f')
 
     # Get all faculties and researches for filters
-    faculties = Faculty.objects.all().order_by('name')
+    faculties = Faculty.objects.filter(students__isnull=False).distinct().order_by('name')
     researches = Research.objects.all().order_by('name')
 
     context = {
