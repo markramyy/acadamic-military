@@ -49,7 +49,7 @@ def export_database(request):
         faculty_file = os.path.join(export_dir, f'faculties_{timestamp}.csv')
         with open(faculty_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
-            writer.writerow(['Name', 'Code'])
+            writer.writerow(['الاسم', 'الكود'])
             for faculty in Faculty.objects.all():
                 writer.writerow([faculty.name, faculty.code])
         exported_files.append(faculty_file)
