@@ -67,10 +67,9 @@ def export_database(request):
         student_file = os.path.join(export_dir, f'students_{timestamp}.csv')
         with open(student_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
-            writer.writerow(['Name', 'Serial Number', 'Faculty', 'Gender'])
+            writer.writerow(['الرقم التسلسلي', 'الكلية', 'النوع'])
             for student in Student.objects.all():
                 writer.writerow([
-                    student.name,
                     student.serial_number,
                     student.faculty.name,
                     'ذكر' if student.gender == 'M' else 'أنثى'
@@ -81,10 +80,9 @@ def export_database(request):
         assignment_file = os.path.join(export_dir, f'assignments_{timestamp}.csv')
         with open(assignment_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
-            writer.writerow(['Student', 'Serial Number', 'Faculty', 'Research', 'Assigned Date'])
+            writer.writerow(['الرقم التسلسلي للطالب', 'الكلية', 'البحث', 'تاريخ التعيين'])
             for assignment in Assignment.objects.all():
                 writer.writerow([
-                    assignment.student.name,
                     assignment.student.serial_number,
                     assignment.student.faculty.name,
                     assignment.research.name,
@@ -96,7 +94,7 @@ def export_database(request):
         course_info_file = os.path.join(export_dir, f'course_info_{timestamp}.csv')
         with open(course_info_file, 'w', newline='', encoding='utf-8-sig') as f:
             writer = csv.writer(f)
-            writer.writerow(['Course Number', 'Start Date', 'End Date', 'Export Date'])
+            writer.writerow(['رقم الدورة', 'تاريخ البداية', 'تاريخ النهاية', 'تاريخ التصدير'])
             writer.writerow([
                 course_number,
                 start_date,
